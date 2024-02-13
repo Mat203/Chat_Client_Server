@@ -4,6 +4,7 @@
 #include <string>
 #include <mutex>
 #include <map>
+#include <direct.h>
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 std::mutex consoleMutex;
@@ -11,13 +12,15 @@ std::map<std::string, std::vector<SOCKET>> rooms;
 
 void broadcastMessage(const std::string& message, SOCKET senderSocket, const std::string& roomId) {
 	std::lock_guard<std::mutex> lock(consoleMutex);
-	std::cout << "Client " << senderSocket << ": " << message << std::endl;
+	std::string fullMessage = "Client " + std::to_string(senderSocket) + ": " + message;
+	std::cout << fullMessage << std::endl;
 	for (SOCKET client : rooms[roomId]) {
 		if (client != senderSocket) {
-			send(client, message.c_str(), message.size() + 1, 0);
+			send(client, fullMessage.c_str(), fullMessage.size() + 1, 0);
 		}
 	}
 }
+
 
 void handleClient(SOCKET clientSocket) {
 	char buffer[4096];
@@ -31,8 +34,11 @@ void handleClient(SOCKET clientSocket) {
 
 	rooms[roomId].push_back(clientSocket);
 
-	std::string joinMessage = "Client " + std::to_string(clientSocket) + " joined the room.";
+	std::string joinMessage = "joined the room.";
 	broadcastMessage(joinMessage, clientSocket, roomId);
+
+	std::string dirName = "Client_" + std::to_string(clientSocket);
+	_mkdir(dirName.c_str());
 
 	while (true) {
 		bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
