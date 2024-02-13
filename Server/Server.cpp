@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <mutex>
@@ -9,6 +10,67 @@
 #pragma comment(lib, "ws2_32.lib")
 std::mutex consoleMutex;
 std::map<std::string, std::vector<SOCKET>> rooms;
+
+class FileHandler {
+public:
+	static void receiveFile(SOCKET clientSocket, const std::string& username)
+	{
+		char buffer[2048];
+		std::string directoryPath = username + "/";
+		std::string fileName = "received_file.txt";
+		std::string fullPath = directoryPath + fileName;
+		std::ofstream outputFile(fullPath, std::ios::binary);
+
+		int totalSize;
+		int bytesReceived = recv(clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
+		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
+			std::cout << "Error in receiving total size." << std::endl;
+			return;
+		}
+
+		int totalReceived = 0;
+		while (totalReceived < totalSize)
+		{
+			bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+			if (bytesReceived > 0)
+			{
+				outputFile.write(buffer, bytesReceived);
+				totalReceived += bytesReceived;
+			}
+			else
+			{
+				break;
+			}
+		}
+		outputFile.close();
+	}
+
+	static void sendFile(SOCKET clientSocket, const std::string& username, const char* fileName)
+	{
+		char buffer[1024];
+		std::string directoryPath = username + "/";
+		std::string fullPath = directoryPath + fileName;
+		std::ifstream inputFile(fullPath.c_str(), std::ios::binary);
+		inputFile.seekg(0, std::ios::end);
+		int totalSize = inputFile.tellg();
+		inputFile.seekg(0, std::ios::beg);
+		send(clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
+		int totalBytesSent = 0;
+		while (inputFile)
+		{
+			inputFile.read(buffer, sizeof(buffer));
+			int bytesRead = inputFile.gcount();
+			if (bytesRead > 0)
+			{
+				send(clientSocket, buffer, bytesRead, 0);
+				std::cout << buffer << std::endl;
+				totalBytesSent += bytesRead;
+				std::cout << "Sent " << bytesRead << " bytes, total: " << totalBytesSent << " bytes" << std::endl;
+			}
+		}
+		inputFile.close();
+	}
+};
 
 void broadcastMessage(const std::string& message, SOCKET senderSocket, const std::string& roomId) {
 	std::lock_guard<std::mutex> lock(consoleMutex);
@@ -49,10 +111,37 @@ void handleClient(SOCKET clientSocket) {
 		}
 		buffer[bytesReceived] = '\0';
 		std::string message(buffer);
-		broadcastMessage(message, clientSocket, roomId);
+
+		if (message.rfind("/sendfile ", 0) == 0) {
+			std::string fileName = message.substr(10); 
+
+			FileHandler::receiveFile(clientSocket, dirName);
+
+			std::string fileMessage = "Client " + std::to_string(clientSocket) + " wants to send a file. Type /receivefile to accept.";
+			broadcastMessage(fileMessage, clientSocket, roomId);
+		}
+		else if (message.rfind("/receivefile", 0) == 0) {
+			std::cout << "Client egssfbsb disconnected.\n";
+			FileHandler::sendFile(clientSocket, dirName.c_str(), "received_file.txt");
+		}
+		else if (message.rfind("/rejoin ", 0) == 0) {
+			std::string newRoomId = message.substr(8);
+
+			rooms[roomId].erase(std::remove(rooms[roomId].begin(), rooms[roomId].end(), clientSocket), rooms[roomId].end());
+
+			roomId = newRoomId;
+			rooms[roomId].push_back(clientSocket);
+
+			joinMessage = "Client " + std::to_string(clientSocket) + " joined the room.";
+			broadcastMessage(joinMessage, clientSocket, roomId);
+		}
+		else {
+			broadcastMessage(message, clientSocket, roomId);
+		}
 	}
 	closesocket(clientSocket);
 }
+
 
 int main() {
 	WSADATA wsaData;
