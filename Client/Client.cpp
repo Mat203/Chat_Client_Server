@@ -40,6 +40,10 @@ int main() {
 		return 1;
 	}
 	std::cout << "Connected to server.\n";
+	std::cout << "Enter room ID: ";
+	std::string roomId;
+	std::getline(std::cin, roomId);
+	send(clientSocket, roomId.c_str(), roomId.size() + 1, 0);
 	// Start a thread to receive messages from the server
 	std::thread receiveThread(receiveMessages, clientSocket);
 	// Main thread to send messages to the server

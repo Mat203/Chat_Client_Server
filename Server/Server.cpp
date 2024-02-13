@@ -3,24 +3,39 @@
 #include <vector>
 #include <string>
 #include <mutex>
+#include <map>
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 std::mutex consoleMutex;
-std::vector<SOCKET> clients;
-void broadcastMessage(const std::string& message, SOCKET senderSocket) {
+std::map<std::string, std::vector<SOCKET>> rooms;
+
+void broadcastMessage(const std::string& message, SOCKET senderSocket, const std::string& roomId) {
 	std::lock_guard<std::mutex> lock(consoleMutex);
 	std::cout << "Client " << senderSocket << ": " << message << std::endl;
-	for (SOCKET client : clients) {
+	for (SOCKET client : rooms[roomId]) {
 		if (client != senderSocket) {
 			send(client, message.c_str(), message.size() + 1, 0);
 		}
 	}
 }
+
 void handleClient(SOCKET clientSocket) {
-	clients.push_back(clientSocket);
 	char buffer[4096];
+	int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+	if (bytesReceived <= 0) {
+		std::cerr << "Failed to get room ID from client.\n";
+		return;
+	}
+	buffer[bytesReceived] = '\0';
+	std::string roomId(buffer);
+
+	rooms[roomId].push_back(clientSocket);
+
+	std::string joinMessage = "Client " + std::to_string(clientSocket) + " joined the room.";
+	broadcastMessage(joinMessage, clientSocket, roomId);
+
 	while (true) {
-		int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+		bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
 		if (bytesReceived <= 0) {
 			std::lock_guard<std::mutex> lock(consoleMutex);
 			std::cout << "Client " << clientSocket << " disconnected.\n";
@@ -28,10 +43,11 @@ void handleClient(SOCKET clientSocket) {
 		}
 		buffer[bytesReceived] = '\0';
 		std::string message(buffer);
-		broadcastMessage(message, clientSocket);
+		broadcastMessage(message, clientSocket, roomId);
 	}
 	closesocket(clientSocket);
 }
+
 int main() {
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
