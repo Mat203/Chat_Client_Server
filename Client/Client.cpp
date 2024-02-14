@@ -11,10 +11,12 @@ public:
 	static void receiveFile(SOCKET clientSocket, const std::string& username)
 	{
 		char buffer[2048];
-		std::string directoryPath = username + "/";
+		std::string directoryPath = "C:/Users/User/Desktop/IT/PP/Chat_Client_Server/Server/"+username +"/";
 		std::string fileName = "received_file.txt";
 		std::string fullPath = directoryPath + fileName;
 		std::ofstream outputFile(fullPath, std::ios::binary);
+
+        std::cout << "Receiver's Directory" << fullPath << std::endl;
 
 		int totalSize;
 		int bytesReceived = recv(clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
@@ -27,6 +29,7 @@ public:
 		while (totalReceived < totalSize)
 		{
 			bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
+            std::cout << "Hey I'm receiving a file " << buffer << std::endl;
 			if (bytesReceived > 0)
 			{
 				outputFile.write(buffer, bytesReceived);
@@ -38,32 +41,6 @@ public:
 			}
 		}
 		outputFile.close();
-	}
-
-	static void sendFile(SOCKET clientSocket, const std::string& username, const char* fileName)
-	{
-		char buffer[1024];
-		std::string directoryPath = username + "/";
-		std::string fullPath = directoryPath + fileName;
-		std::ifstream inputFile(fullPath.c_str(), std::ios::binary);
-		inputFile.seekg(0, std::ios::end);
-		int totalSize = inputFile.tellg();
-		inputFile.seekg(0, std::ios::beg);
-		send(clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
-		int totalBytesSent = 0;
-		while (inputFile)
-		{
-			inputFile.read(buffer, sizeof(buffer));
-			int bytesRead = inputFile.gcount();
-			if (bytesRead > 0)
-			{
-				send(clientSocket, buffer, bytesRead, 0);
-				std::cout << buffer << std::endl;
-				totalBytesSent += bytesRead;
-				std::cout << "Sent " << bytesRead << " bytes, total: " << totalBytesSent << " bytes" << std::endl;
-			}
-		}
-		inputFile.close();
 	}
 };
 
@@ -81,9 +58,19 @@ public:
                 break;
             }
             buffer[bytesReceived] = '\0';
-            std::cout << buffer << std::endl;
+            std::string message(buffer);
+
+            if (message.rfind("/username ", 0) == 0) {
+                std::string username = message.substr(10);
+                std::cout << username << std::endl;
+                FileHandler::receiveFile(clientSocket, username);
+            }
+            else {
+                std::cout << message << std::endl;
+            }
         }
     }
+
 
     void start() {
         WSADATA wsaData;
