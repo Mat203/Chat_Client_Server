@@ -51,6 +51,7 @@ private:
 public:
     void receiveMessages() {
         char buffer[4096];
+        std::string username;
         while (true) {
             int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
             if (bytesReceived <= 0) {
@@ -61,8 +62,16 @@ public:
             std::string message(buffer);
 
             if (message.rfind("/username ", 0) == 0) {
-                std::string username = message.substr(10);
+                username = message.substr(10);
+                std::cout << "HERE WE WILL HAVE NICKNAME" << std::endl;
                 std::cout << username << std::endl;
+            }
+            else if (message.find("wants to send a file") != std::string::npos) {
+                std::cout << "HERE WE WILL HAVE NICKNAME" << std::endl;
+                std::cout << username << std::endl;
+                std::cout << "User " << username << " wants to send a file. Type /receivefile to accept the file." << std::endl;
+            }
+            else if (message.rfind("/receivefile", 0) == 0) {
                 FileHandler::receiveFile(clientSocket, username);
             }
             else {
@@ -70,6 +79,9 @@ public:
             }
         }
     }
+
+
+
 
 
     void start() {
