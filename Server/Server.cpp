@@ -83,6 +83,7 @@ private:
     std::mutex consoleMutex;
     std::map<std::string, std::pair<SOCKET, std::string>> fileTransfers;
     std::mutex messageQueueMutex;
+    std::mutex roomsMutex;
     std::condition_variable messageAvailableCondition;
     std::queue<Message> messageQueue;
 
@@ -146,8 +147,6 @@ public:
 
 
 
-
-
     void handleClient(SOCKET clientSocket) {
         char buffer[4096];
         int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
@@ -200,6 +199,7 @@ public:
             else if (message.rfind("/rejoin ", 0) == 0) {
                 std::string newRoomId = message.substr(8);
 
+                std::lock_guard<std::mutex> lock(roomsMutex);
                 rooms[roomId].erase(std::remove(rooms[roomId].begin(), rooms[roomId].end(), clientSocket), rooms[roomId].end());
 
                 roomId = newRoomId;
