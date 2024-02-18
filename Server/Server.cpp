@@ -139,7 +139,7 @@ public:
                 std::cout << usernameMessage << std::endl;
                 send(client, usernameMessage.c_str(), usernameMessage.size() + 1, 0);
 
-                std::string fileTransferRequest = "User " + senderDirectory + " wants to send a file. Type /receivefile to accept the file.";
+                std::string fileTransferRequest = "User " + senderDirectory + " wants to send a file. Type /receivefile to accept the file or /declinefile.";
                 send(client, fileTransferRequest.c_str(), fileTransferRequest.size() + 1, 0);
             }
         }
@@ -207,6 +207,20 @@ public:
 
                 joinMessage = "Client " + std::to_string(clientSocket) + " joined the room.";
                 broadcastMessage(joinMessage, clientSocket, roomId);
+            }
+            else if (message.rfind("/declinefile", 0) == 0) {
+                if (fileTransfers.count(roomId) > 0) {
+                    fileTransfers.erase(roomId);
+                    std::string declineMessage = "Client declined the file transfer.";
+                    broadcastMessage(declineMessage, clientSocket, roomId);
+                }
+            }
+            else if (message.rfind("/", 0) == 0) {
+                if (fileTransfers.count(roomId) > 0) {
+                    fileTransfers.erase(roomId);
+                    std::string declineMessage = "Unknown Command.";
+                    broadcastMessage(declineMessage, clientSocket, roomId);
+                }
             }
             else {
                 broadcastMessage(message, clientSocket, roomId);
