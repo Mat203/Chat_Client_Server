@@ -5,11 +5,18 @@
 #include <string>
 #include <mutex>
 #include <map>
+#include <queue>
 #include <direct.h>
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 std::mutex consoleMutex;
 std::map<std::string, std::vector<SOCKET>> rooms;
+
+struct Message {
+    std::string content;
+    SOCKET senderSocket;
+    std::string roomId;
+};
 
 class FileHandler {
 public:
@@ -59,7 +66,6 @@ public:
         int totalBytesSent = 0;
         while (inputFile) {
             inputFile.read(buffer, sizeof(buffer));
-            std::cout << "SendFileBuffer" << buffer << std::endl;
             int bytesRead = inputFile.gcount();
             if (bytesRead > 0) {
                 send(clientSocket, buffer, bytesRead, 0);
@@ -76,8 +82,40 @@ private:
     std::map<std::string, std::vector<SOCKET>> rooms;
     std::mutex consoleMutex;
     std::map<std::string, std::pair<SOCKET, std::string>> fileTransfers;
+    std::mutex messageQueueMutex;
+    std::condition_variable messageAvailableCondition;
+    std::queue<Message> messageQueue;
 
 public:
+    void addMessageToQueue(const Message& message) {
+        {
+            std::lock_guard<std::mutex> lock(messageQueueMutex);
+            messageQueue.push(message);
+        }
+        messageAvailableCondition.notify_one();
+    }
+
+    void broadcastMessages() {
+        while (true) {
+            std::unique_lock<std::mutex> lock(messageQueueMutex);
+            messageAvailableCondition.wait(lock, [this] { return !messageQueue.empty(); });
+
+            while (!messageQueue.empty()) {
+                Message message = messageQueue.front();
+                messageQueue.pop();
+
+                std::string fullMessage = "Client " + std::to_string(message.senderSocket) + ": " + message.content;
+                std::cout << fullMessage << std::endl;
+                for (SOCKET client : rooms[message.roomId]) {
+                    if (client != message.senderSocket) {
+                        send(client, fullMessage.c_str(), fullMessage.size() + 1, 0);
+                    }
+                }
+            }
+        }
+    }
+
+
     void broadcastMessage(const std::string& message, SOCKET senderSocket, const std::string& roomId) {
         std::lock_guard<std::mutex> lock(consoleMutex);
         std::string fullMessage = "Client " + std::to_string(senderSocket) + ": " + message;

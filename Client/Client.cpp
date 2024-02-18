@@ -16,8 +16,6 @@ public:
 		std::string fullPath = directoryPath + fileName;
 		std::ofstream outputFile(fullPath, std::ios::binary);
 
-        std::cout << "Receiver's Directory" << fullPath << std::endl;
-
 		int totalSize;
 		int bytesReceived = recv(clientSocket, reinterpret_cast<char*>(&totalSize), sizeof(int), 0);
 		if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
@@ -29,7 +27,6 @@ public:
 		while (totalReceived < totalSize)
 		{
 			bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
-            std::cout << "Hey I'm receiving a file " << buffer << std::endl;
 			if (bytesReceived > 0)
 			{
 				outputFile.write(buffer, bytesReceived);
@@ -63,13 +60,6 @@ public:
 
             if (message.rfind("/username ", 0) == 0) {
                 username = message.substr(10);
-                std::cout << "HERE WE WILL HAVE NICKNAME" << std::endl;
-                std::cout << username << std::endl;
-            }
-            else if (message.find("wants to send a file") != std::string::npos) {
-                std::cout << "HERE WE WILL HAVE NICKNAME" << std::endl;
-                std::cout << username << std::endl;
-                std::cout << "User " << username << " wants to send a file. Type /receivefile to accept the file." << std::endl;
             }
             else if (message.rfind("/receivefile", 0) == 0) {
                 FileHandler::receiveFile(clientSocket, username);
@@ -79,9 +69,6 @@ public:
             }
         }
     }
-
-
-
 
 
     void start() {
