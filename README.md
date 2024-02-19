@@ -51,3 +51,14 @@ The `FileHandler` class is responsible for sending and receiving files.
 ## UML-diagrams
 ### General communication
 ![alt text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/general_communication.png)
+
+### General communication
+![alt_text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/room_rejoining.png)
+
+### Sending file
+![alt_text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/sending_file.png)
+
+## Code Examples
+### Messaging Example
+![alt_text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/messaging_example.png)
+Main functionality is in class ChatServer, functions handleClient(), broadcastMessages(), addMessageToQueue
