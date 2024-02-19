@@ -59,6 +59,17 @@ The `FileHandler` class is responsible for sending and receiving files.
 ![alt_text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/sending_file.png)
 
 ## Code Examples
+### Room Joining Example
+![alt_text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/room_joining_example.png)
+Main functionality is in class ChatServer, functions handleClient(), broadcastMessages(), addMessageToQueue();  Client code: ChatClient claas.
+### Room Rejoining Example
+![alt_text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/room_rejoin_example.png)
+Main functionality is in class ChatServer, functions handleClient(), broadcastMessages(), addMessageToQueue();  Client code: ChatClient claas.
+
 ### Messaging Example
 ![alt_text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/messaging_example.png)
-Main functionality is in class ChatServer, functions handleClient(), broadcastMessages(), addMessageToQueue
+Main functionality is in class ChatServer, functions handleClient(), broadcastMessages(), addMessageToQueue();  Client code: ChatClient claas.
+
+### Sending File
+![alt_text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/sending_file_example.png)
+Main functionality are in classes ChatServer: functions handleClient(), broadcastMessages(), broadcastFile() addMessageToQueue(); FileHandler: sendFile, receiveFile. Client code: ChatClient claas, FileHandler Class
