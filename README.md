@@ -47,3 +47,7 @@ The `FileHandler` class is responsible for sending and receiving files.
 4. If a client wants to send a file, it sends a `/sendfile` command followed by the filename to the server. The server broadcasts a file transfer request to all other clients in the same room.
 5. If a client wants to receive the file, it sends a `/receivefile` command to the server. The server then sends the file to the client.
 6. If a client wants to rejoin a room, it sends a `/rejoin` command followed by the new room ID to the server. The server moves the client to the new room.
+
+## UML-diagrams
+### General communication
+![alt text](https://github.com/Mat203/Chat_Client_Server/blob/master/images/general_communication.png)
