@@ -83,7 +83,11 @@ private:
     std::mutex consoleMutex;
     std::map<std::string, std::pair<SOCKET, std::string>> fileTransfers;
     std::mutex messageQueueMutex;
+    std::mutex fileMutex;
+    std::mutex fileTransferMutex;
     std::mutex roomsMutex;
+    std::mutex roomsJoinMutex;
+    std::mutex roomsIterateMutex;
     std::condition_variable messageAvailableCondition;
     std::queue<Message> messageQueue;
 
@@ -107,6 +111,7 @@ public:
 
                 std::string fullMessage = "Client " + std::to_string(message.senderSocket) + ": " + message.content;
                 std::cout << fullMessage << std::endl;
+                std::lock_guard<std::mutex> lock(roomsIterateMutex);
                 for (SOCKET client : rooms[message.roomId]) {
                     if (client != message.senderSocket) {
                         send(client, fullMessage.c_str(), fullMessage.size() + 1, 0);
@@ -157,7 +162,9 @@ public:
         buffer[bytesReceived] = '\0';
         std::string roomId(buffer);
 
+        roomsJoinMutex.lock();
         rooms[roomId].push_back(clientSocket);
+        roomsJoinMutex.unlock();
 
         std::string joinMessage = "joined the room.";
         broadcastMessage(joinMessage, clientSocket, roomId);
@@ -179,6 +186,7 @@ public:
             if (message.rfind("/sendfile ", 0) == 0) {
                 std::string filename = message.substr(10);
                 std::string senderDirectory = "Client_" + std::to_string(clientSocket); 
+                std::lock_guard<std::mutex> lock(fileTransferMutex);
                 fileTransfers[roomId] = std::make_pair(clientSocket, filename); 
                 broadcastFile(filename, clientSocket, roomId);
             }
@@ -210,6 +218,7 @@ public:
             }
             else if (message.rfind("/declinefile", 0) == 0) {
                 if (fileTransfers.count(roomId) > 0) {
+                    std::lock_guard<std::mutex> lock(fileMutex);
                     fileTransfers.erase(roomId);
                     std::string declineMessage = "Client declined the file transfer.";
                     broadcastMessage(declineMessage, clientSocket, roomId);
